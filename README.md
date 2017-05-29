@@ -1,12 +1,12 @@
-# RSstatus
+### RSstatus
 mongo replica set status command line tool
 
-# Why ?
+### Why ?
 
 Since mongo 3.x HTTP api is not available,  
 but the information in human readable format is needed.
 
-# OMG why bash ?
+### OMG why bash ?
 
 If you know the madness of mongo ruby / python changes in gems / libraries,  
 moreover, having pinned a specific version (of mentioned libraries) for tools that you already have  
@@ -15,7 +15,7 @@ makes everything complex to handle.
 So, to be agnostic from that, 
 it was the only reasonable choice.  
 
-# Requirements
+### Requirements
 
 Script is based on jshon - JSON parser tool
 just install it with
@@ -36,7 +36,7 @@ readolny user in mogodb with clusterMonitor role:
 
 ```
 
-# Run
+### Run
 
 ```
 $ ./rsstatus.sh 

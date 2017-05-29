@@ -3,7 +3,8 @@ mongo replica set status command line tool
 
 ### Why ?
 
-Since mongo 3.x HTTP api is not available,  
+Since mongo 3.x HTTP api is [not available](https://docs.mongodb.com/manual/release-notes/3.0-compatibility/#http-status-interface-and-rest-api-compatibility)  
+(challenge-response user authentication mechanism is not suported)   
 but the information in human readable format is needed.
 
 ### OMG why bash ?

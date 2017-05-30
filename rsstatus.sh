@@ -46,7 +46,7 @@ shortHost() {
 
 timeToHex() {
   while read data; do
-    echo "$data" | grep -o -P '\d\d\d+' | xargs -ito_hex printf "%x\n" to_hex
+    echo "$data" | grep -o -P '[0-9]{4,}' | xargs -ito_hex printf "%x\n" to_hex
   done
 }
 

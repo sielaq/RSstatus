@@ -59,7 +59,7 @@ fixNull() {
 fixHidden() {
   while read data; do
     echo "$data" | sed 's/null/ /g;
-                        s/false/ /g;r
+                        s/false/ /g;
                         s/true/(hidden)/g'
   done
 }

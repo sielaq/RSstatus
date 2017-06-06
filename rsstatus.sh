@@ -2,11 +2,13 @@
 
 
 helpJSHON() {
+  exec 1>&2
   echo "jshon is required"
   echo "  apt-get install jshon"
 }
 
 helpInstall() {
+  exec 1>&2
   cat << INSTALL
   In order to make this script working:
   login to the mongo admin db with your poweruser credentials

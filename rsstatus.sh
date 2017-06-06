@@ -89,17 +89,21 @@ printArray() {
 
 
 main() {
+
+  LOGIN="-u readonly -p readonl"
+  HEAD="Member Id Up Votes Priority State optime"
+
   [ $# -ne 0 ] && help && exit 1
   which jshon >/dev/null 2>&1 || { helpJSHON; exit 1; }
 
-  VERSION=$(mongo --quiet admin -u readonly -p readonly <<< 'db.version()')
+  # Determine if login is required (needed for nologin / or STARTUP sate)
+  mongo --quiet admin $LOGIN <<< 'rs.conf()' >/dev/null 2>&1  || \
+  { mongo --quiet admin <<< 'rs.conf()' >/dev/null 2>&1 && LOGIN=""; }
   [ $? -ne 0 ] && helpInstall && exit 1
 
-  #HEAD="Member Id Up Last_heartbeat Votes Priority State Message optime"
-  HEAD="Member Id Up Votes Priority State optime"
-
-  CONF=$(mongo --quiet admin -u readonly -p readonly <<< 'rs.conf()'| fixJSON)
-  STATUS=$(mongo --quiet admin -u readonly -p readonly <<< 'rs.status()'| fixJSON)
+  CONF=$(mongo --quiet admin $LOGIN <<< 'rs.conf()'| fixJSON)
+  STATUS=$(mongo --quiet admin $LOGIN <<< 'rs.status()'| fixJSON)
+  VERSION=$(mongo --quiet admin $LOGIN <<< 'db.version()')
 
   _ID=$(getDataFromJSON _id "$CONF")
   _HOST=$(getDataFromJSON host "$CONF"| shortHost)

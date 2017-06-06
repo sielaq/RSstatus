@@ -90,7 +90,7 @@ printArray() {
 
 main() {
 
-  LOGIN="-u readonly -p readonl"
+  LOGIN="-u readonly -p readonly"
   HEAD="Member Id Up Votes Priority State optime"
 
   [ $# -ne 0 ] && help && exit 1

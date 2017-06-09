@@ -41,11 +41,11 @@ readolny user in mogodb with clusterMonitor role:
 
 ```
 $ ./rsstatus.sh 
-+--------------------------------------------------------------------------
-|Member               |Id |Up |Votes |Priority |State             |optime
-|mongo-ams1-001:27017 |0  |1  |1     |1        |SECONDARY         |592bd3d3
-|mongo-ams1-002:27017 |1  |1  |1     |1        |PRIMARY           |592bd3d3
-|mongo-ams2-001:27017 |2  |1  |1     |0        |SECONDARY         |592bd3d3
-|mongo-ams2-002:27017 |3  |1  |0     |0        |SECONDARY(hidden) |592bd3d3
-+--------------------------------------------------------------------------
++---------------------------------------------------------------------------------------+
+| Member               | Id | Up | Votes | Priority | State              | optime       |
+| mongo-ams1-001:27017 | 0  | 1  | 1     | 2        | PRIMARY            | 593b1518:3   |
+| mongo-ams1-002:27017 | 1  | 1  | 1     | 2        | SECONDARY          | 593b1518:3   |
+| mongo-ams2-001:27017 | 2  | 1  | 0     | 0        | RECOVERING(hidden) | 5937d173:393 |
+| mongo-ams2-002:27017 | 3  | 1  | 1     | 1        | SECONDARY          | 593b1518:3   |
++---------------------------------------------------------------------------------------+
 ```

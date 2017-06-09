@@ -86,7 +86,7 @@ top(){
 bottom() { top "$1"; }
 
 printArray() {
-  echo "$1" | sed  's/ \([0-9a-Z]\)/|\1/g' | awk '{print "|"$NL}'
+  echo "$1" | sed  's/ \([-0-9a-Z]\)/|\1/g' | awk '{print "|"$NL}'
 }
 
 

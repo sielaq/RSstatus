@@ -31,64 +31,73 @@ help() {
 }
 
 fixJSON() {
-  while read data; do
-    echo "$data" | sed 's/("/(/g;
-                        s/")/)/g;
-                        s/ : \([A-Z]\)/ : "\1/g;
-                        s/),/)",/g;
-                        s/)$/)"/g'
-  done
+  sed 's/("/(/g;
+       s/")/)/g;
+       s/ : \([A-Z]\)/ : "\1/g;
+       s/),/)",/g;
+       s/)$/)"/g'
 }
 
 shortHost() {
-  while read data; do
-    echo "$data" | sed 's/\..*:/:/g'
-  done
+  sed 's/\..*:/:/g'
 }
 
 timeToHex() {
-  while read data; do
-    echo "$data" | grep -o -P '\d+' | xargs printf "%x:%x\n"
-  done
+  grep -o -P '\d+' |xargs printf "%x:%x\n"
 }
 
 fixNull() {
-  while read data; do
-    echo "$data" | sed 's/null/1/g'
-  done
+  sed 's/null/1/g'
 }
 
 fixHidden() {
-  while read data; do
-    echo "$data" | sed 's/null/ /g;
-                        s/false/ /g;
-                        s/true/(hidden)/g'
-  done
+  sed 's/null//g;
+       s/false//g;
+       s/true/(hidden)/g'
 }
 
-getDataFromJSON(){
+getDataFromJSON() {
   jshon -Q -C -e members -a -e $1 -u <<< "$2"
 }
 
-getComplexDataFromJSON(){
+getComplexDataFromJSON() {
   jshon -e members -a -e $1 -e $2 -u <<< "$3"
 }
 
-top(){
-  len=$(echo "$1"| wc -L)
-  printf "+";
-  for i in $(seq 1 $len); do
-     printf "-"
+topLine() {
+  printf -- "+-"
+  for i in $(seq 1 $1); do
+     printf -- "-"
   done
+  printf -- "-+"
   echo
 }
 
-bottom() { top "$1"; }
-
-printArray() {
-  echo "$1" | sed  's/ \([-0-9a-Z]\)/|\1/g' | awk '{print "|"$NL}'
+fixLine() {
+  while read data; do
+    printf "| "
+    printf "$data"
+    maxLine=$(echo "$data" | wc -L)
+    countMissing=$(( $1 - $maxLine ))
+    for i in $(seq 1 $countMissing); do
+      printf " "
+    done
+    printf " |"
+    echo
+  done
 }
 
+bottomLine() {
+  topLine "$1"
+}
+
+separateColumns() {
+  sed 's/ \([-0-9a-Z]\)/| \1/g'
+}
+
+adjustColumns() {
+  column -t -x
+}
 
 main() {
 
@@ -98,7 +107,7 @@ main() {
   [ $# -ne 0 ] && help && exit 1
   which jshon >/dev/null 2>&1 || { helpJSHON; exit 1; }
 
-  # Determine if login is required (needed for nologin / or STARTUP sate)
+  # Determine if login is required (needed for nologin / or STARTUP state)
   mongo --quiet admin $LOGIN <<< 'rs.conf()' >/dev/null 2>&1  || \
   { mongo --quiet admin <<< 'rs.conf()' >/dev/null 2>&1 && LOGIN=""; }
   [ $? -ne 0 ] && helpInstall && exit 1
@@ -122,14 +131,25 @@ main() {
   _STATE=$(getDataFromJSON stateStr "$STATUS")
   _UP=$(getDataFromJSON health "$STATUS")
 
-  _STATE=$(paste -d'\0' <(echo "$_STATE") <(echo "$_HIDDEN"))
+  _STATE=$(paste -d'\0' <(echo "$_STATE") \
+                        <(echo "$_HIDDEN") \
+  )
 
-  ARRAY=$(paste <(echo "$_HOST") <(echo "$_ID") <(echo "$_UP") <(echo "$_VOTES") <(echo "$_PRIORITY") <(echo "$_STATE") <(echo "$_OPTIME"))
-  ARRAY=$(echo $HEAD; echo "$ARRAY")
-  ARRAY=$(echo "$ARRAY"| column -t -x)
+  ARRAY=$(paste <(echo "$_HOST") \
+                <(echo "$_ID") \
+                <(echo "$_UP") \
+                <(echo "$_VOTES") \
+                <(echo "$_PRIORITY") \
+                <(echo "$_STATE") \
+                <(echo "$_OPTIME") \
+  )
 
-  top "$ARRAY"
-  printArray "$ARRAY"
-  bottom "$ARRAY"
+  ARRAY=$(echo -e "${HEAD}\n${ARRAY}" | adjustColumns | separateColumns )
+  lenLongestLine=$(echo "$ARRAY" | wc -L)
+
+  topLine $lenLongestLine
+  echo "$ARRAY" | fixLine $lenLongestLine
+  bottomLine $lenLongestLine
+
 }
 main $@

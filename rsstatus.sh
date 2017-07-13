@@ -87,12 +87,16 @@ fixLine() {
   done
 }
 
+sanitizeLine() {
+   sed 's/ /_/g'
+}
+
 bottomLine() {
   topLine "$1"
 }
 
 separateColumns() {
-  sed 's/ \([-0-9a-Z]\)/| \1/g'
+  sed 's/ \([-0-9a-Z(]\)/| \1/g'
 }
 
 adjustColumns() {
@@ -128,7 +132,7 @@ main() {
     _OPTIME=$(getDataFromJSON optime "$STATUS"| timeToHex)
   }
 
-  _STATE=$(getDataFromJSON stateStr "$STATUS")
+  _STATE=$(getDataFromJSON stateStr "$STATUS"| sanitizeLine)
   _UP=$(getDataFromJSON health "$STATUS")
 
   _STATE=$(paste -d'\0' <(echo "$_STATE") \

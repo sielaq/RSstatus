@@ -126,7 +126,7 @@ main() {
   _PRIORITY=$(getDataFromJSON priority "$CONF" | fixNull)
   _HIDDEN=$(getDataFromJSON hidden "$CONF"| fixHidden)
 
-  [[ "$VERSION" =~ ^"3.2"|^"3.4.1" ]]  && {
+  [[ "$VERSION" =~ ^3\.2|^3\.4\.[1-4]$ ]]  && {
     _OPTIME=$(getComplexDataFromJSON optime ts "$STATUS"| timeToHex)
   } || {
     _OPTIME=$(getDataFromJSON optime "$STATUS"| timeToHex)

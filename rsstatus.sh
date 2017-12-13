@@ -33,6 +33,7 @@ help() {
 fixJSON() {
   sed 's/("/(/g;
        s/")/)/g;
+       s/,"/,/g;
        s/ : \([A-Z]\)/ : "\1/g;
        s/),/)",/g;
        s/)$/)"/g'
@@ -126,7 +127,7 @@ main() {
   _PRIORITY=$(getDataFromJSON priority "$CONF" | fixNull)
   _HIDDEN=$(getDataFromJSON hidden "$CONF"| fixHidden)
 
-  [[ "$VERSION" =~ ^3\.2|^3\.4\.[1-4]$ ]]  && {
+  [[ "$VERSION" =~ ^3\.6|^3\.2|^3\.4\.[1-4]$ ]]  && {
     _OPTIME=$(getComplexDataFromJSON optime ts "$STATUS"| timeToHex)
   } || {
     _OPTIME=$(getDataFromJSON optime "$STATUS"| timeToHex)

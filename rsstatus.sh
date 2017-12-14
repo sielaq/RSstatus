@@ -3,8 +3,12 @@
 
 helpJSHON() {
   exec 1>&2
-  echo "jshon is required"
-  echo "  apt-get install jshon"
+  cat << HELP
+  jshon or jq is required
+    apt-get install jshon
+  or
+    apt-get install jq
+HELP
 }
 
 helpInstall() {
@@ -58,11 +62,13 @@ fixHidden() {
 }
 
 getDataFromJSON() {
-  jshon -Q -C -e members -a -e $1 -u <<< "$2"
+  [ $JSHON ] && jshon -Q -C -e members -a -e $1 -u <<< "$2" && return
+  [ $JQ ] && jq ".members[].$1" -r <<< "$2" && return
 }
 
 getComplexDataFromJSON() {
-  jshon -e members -a -e $1 -e $2 -u <<< "$3"
+  [ $JSHON ] && jshon -e members -a -e $1 -e $2 -u <<< "$3" && return
+  [ $JQ ] && jq ".members[].$1.$2" -r <<< "$3" && return
 }
 
 topLine() {
@@ -110,7 +116,14 @@ main() {
   HEAD="Member Id Up Votes Priority State optime"
 
   [ $# -ne 0 ] && help && exit 1
-  which jshon >/dev/null 2>&1 || { helpJSHON; exit 1; }
+
+  which jshon >/dev/null 2>&1 && JSHON=true
+  which jq >/dev/null 2>&1 && JQ=true
+
+  [ $JSHON ] || [ $JQ ] || {
+    helpJSHON
+    exit 1
+  }
 
   # Determine if login is required (needed for nologin / or STARTUP state)
   mongo --quiet admin $LOGIN <<< 'rs.conf()' >/dev/null 2>&1  || \

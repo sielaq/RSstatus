@@ -18,12 +18,15 @@ it was the only reasonable choice.
 
 ### Requirements
 
-Script is based on jshon - JSON parser tool
-just install it with
+Script is based on jshon or jq - JSON parser tools
+just install one of it, like:
 
-`apt-get install jshon`
+`apt-get install jshon || yum install jshon`
+or
+`apt-get install jq || yum install jq`
 
-readolny user in mogodb with clusterMonitor role:
+If system is secured,
+create `readolny` user in mogodb with `clusterMonitor` role:
 
 ```
   db.createUser({

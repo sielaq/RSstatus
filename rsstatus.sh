@@ -34,21 +34,12 @@ help() {
   echo "Just run $0"
 }
 
-fixJSON() {
-  sed 's/("/(/g;
-       s/")/)/g;
-       s/,"/,/g;
-       s/ : \([A-Z]\)/ : "\1/g;
-       s/),/)",/g;
-       s/)$/)"/g'
-}
-
 shortHost() {
   sed 's/\..*:/:/g'
 }
 
 timeToHex() {
-  grep -o -P '\d+' |xargs printf "%x:%x\n"
+  xargs printf "%x\n"
 }
 
 fixNull() {
@@ -62,13 +53,18 @@ fixHidden() {
 }
 
 getDataFromJSON() {
-  [ $JSHON ] && jshon -Q -C -e members -a -e $1 -u <<< "$2" && return
-  [ $JQ ] && jq ".members[].$1" -r <<< "$2" && return
-}
+  last=${!#}
+  except_last=${@:1:${#}-1}
 
-getComplexDataFromJSON() {
-  [ $JSHON ] && jshon -e members -a -e $1 -e $2 -u <<< "$3" && return
-  [ $JQ ] && jq ".members[].$1.$2" -r <<< "$3" && return
+  for element in $except_last;
+  do
+    jshonArgs="${jshonArgs} -e ${element}"
+    jqArgs="${jqArgs}.\"${element}\""
+  done
+
+  [ $JSHON ] && jshon -Q -C -e members -a ${jshonArgs} -u <<< "$last" && return
+  [ $JQ ] && jq .members[]${jqArgs} -r <<< "$last" && return
+  return 1
 }
 
 topLine() {
@@ -130,9 +126,9 @@ main() {
   { mongo --quiet admin <<< 'rs.conf()' >/dev/null 2>&1 && LOGIN=""; }
   [ $? -ne 0 ] && helpInstall && exit 1
 
-  CONF=$(mongo --quiet admin $LOGIN <<< 'rs.conf()'| fixJSON)
-  STATUS=$(mongo --quiet admin $LOGIN <<< 'rs.status()'| fixJSON)
-  VERSION=$(mongo --quiet admin $LOGIN <<< 'db.version()')
+  CONF=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.conf())')
+  STATUS=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.status())')
+  VERSION=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(db.version())')
 
   _ID=$(getDataFromJSON _id "$CONF")
   _HOST=$(getDataFromJSON host "$CONF"| shortHost)
@@ -140,11 +136,24 @@ main() {
   _PRIORITY=$(getDataFromJSON priority "$CONF" | fixNull)
   _HIDDEN=$(getDataFromJSON hidden "$CONF"| fixHidden)
 
-  [[ "$VERSION" =~ ^3\.6|^3\.2|^3\.4\.[1-4]$ ]]  && {
-    _OPTIME=$(getComplexDataFromJSON optime ts "$STATUS"| timeToHex)
-  } || {
-    _OPTIME=$(getDataFromJSON optime "$STATUS"| timeToHex)
-  }
+  case "$STATUS" in
+    *optime\"*ts*)
+      _OPTIME_T=$(getDataFromJSON optime ts '$timestamp' t "$STATUS" | timeToHex)
+      _OPTIME_I=$(getDataFromJSON optime ts '$timestamp' i "$STATUS" | timeToHex)
+      ;;
+    *timestamp*)
+      _OPTIME_T=$(getDataFromJSON optime '$timestamp' t "$STATUS" | timeToHex)
+      _OPTIME_I=$(getDataFromJSON optime '$timestamp' i "$STATUS" | timeToHex)
+      ;;
+    *)
+      _OPTIME_T=$(getDataFromJSON optime t "$STATUS" | timeToHex)
+      _OPTIME_I=$(getDataFromJSON optime i "$STATUS" | timeToHex)
+      ;;
+  esac
+
+  _OPTIME=$(paste -d':' <(echo "$_OPTIME_T") \
+                        <(echo "$_OPTIME_I") \
+  )
 
   _STATE=$(getDataFromJSON stateStr "$STATUS"| sanitizeLine)
   _UP=$(getDataFromJSON health "$STATUS")

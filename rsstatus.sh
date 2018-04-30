@@ -128,7 +128,7 @@ main() {
 
   CONF=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.conf())')
   STATUS=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.status())')
-  VERSION=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(db.version())')
+  #VERSION=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(db.version())')
 
   _ID=$(getDataFromJSON _id "$CONF")
   _HOST=$(getDataFromJSON host "$CONF"| shortHost)
@@ -137,14 +137,22 @@ main() {
   _HIDDEN=$(getDataFromJSON hidden "$CONF"| fixHidden)
 
   case "$STATUS" in
-    *optime\"*ts*)
+    # 3.4 / 3.6
+    *optime\"*ts*timestamp*)
       _OPTIME_T=$(getDataFromJSON optime ts '$timestamp' t "$STATUS" | timeToHex)
       _OPTIME_I=$(getDataFromJSON optime ts '$timestamp' i "$STATUS" | timeToHex)
       ;;
+    # 3.2
+    *optime\"*ts*)
+      _OPTIME_T=$(getDataFromJSON optime ts t "$STATUS" | timeToHex)
+      _OPTIME_I=$(getDataFromJSON optime ts i "$STATUS" | timeToHex)
+      ;;
+    # 3.4.7
     *timestamp*)
       _OPTIME_T=$(getDataFromJSON optime '$timestamp' t "$STATUS" | timeToHex)
       _OPTIME_I=$(getDataFromJSON optime '$timestamp' i "$STATUS" | timeToHex)
       ;;
+    # 2.x
     *)
       _OPTIME_T=$(getDataFromJSON optime t "$STATUS" | timeToHex)
       _OPTIME_I=$(getDataFromJSON optime i "$STATUS" | timeToHex)

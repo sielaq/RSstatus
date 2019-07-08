@@ -99,7 +99,7 @@ bottomLine() {
 }
 
 separateColumns() {
-  sed 's/ \([-0-9a-Z(]\)/| \1/g'
+  sed 's/ \([-0-9a-zA-Z(]\)/| \1/g'
 }
 
 adjustColumns() {

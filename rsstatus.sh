@@ -62,8 +62,8 @@ getDataFromJSON() {
     jqArgs="${jqArgs}.\"${element}\""
   done
 
-  [ $JSHON ] && jshon -Q -C -e members -a ${jshonArgs} -u <<< "$last" && return
-  [ $JQ ] && jq .members[]${jqArgs} -r <<< "$last" && return
+  [ $JSHON ] && jshon -Q -C -a ${jshonArgs} -u <<< "$last" && return
+  [ $JQ ] && jq .[]${jqArgs} -r <<< "$last" && return
   return 1
 }
 
@@ -91,7 +91,7 @@ fixLine() {
 }
 
 sanitizeLine() {
-   sed 's/ /_/g'
+  sed 's/ /_/g'
 }
 
 bottomLine() {
@@ -126,12 +126,17 @@ main() {
   { mongo --quiet admin <<< 'rs.conf()' >/dev/null 2>&1 && LOGIN=""; }
   [ $? -ne 0 ] && helpInstall && exit 1
 
-  CONF=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.conf())')
-  STATUS=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.status())')
+  CONF=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.conf().members.sort((a,b) => a._id - b._id ))')
+  STATUS=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.status().members.sort((a,b) => a._id - b._id ))')
   #VERSION=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(db.version())')
 
   _ID=$(getDataFromJSON _id "$CONF")
   _HOST=$(getDataFromJSON host "$CONF"| shortHost)
+  _HOST_LONG=$(getDataFromJSON host "$CONF")
+
+  echo "$_HOST" | sort | uniq -c -d | grep . -q  && \
+    _HOST="$_HOST_LONG"
+
   _VOTES=$(getDataFromJSON votes "$CONF"| fixNull)
   _PRIORITY=$(getDataFromJSON priority "$CONF" | fixNull)
   _HIDDEN=$(getDataFromJSON hidden "$CONF"| fixHidden)

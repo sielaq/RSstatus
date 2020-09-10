@@ -142,9 +142,12 @@ main() {
   { mongo --quiet admin $ENCRYPTION <<< 'rs.conf()' >/dev/null 2>&1 && LOGIN=""; }
   [ $? -ne 0 ] && helpInstall && exit 1
 
-  CONF=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< 'JSON.stringify(rs.conf().members.sort((a,b) => a._id - b._id ))')
-  STATUS=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< 'JSON.stringify(rs.status().members.sort((a,b) => a._id - b._id ))')
-  #VERSION=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< 'JSON.stringify(db.version())')
+  VERSION=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< 'JSON.stringify(db.version())')
+  [[ "${VERSION#\"}" =~ ^2\. ]] && esc="'"
+
+  sorted="${esc}(a,b) => a._id - b._id${esc}"
+  CONF=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< "JSON.stringify(rs.conf().members.sort($sorted))")
+  STATUS=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< "JSON.stringify(rs.status().members.sort($sorted))")
 
   _ID=$(getDataFromJSON _id "$CONF")
   _HOST=$(getDataFromJSON host "$CONF"| shortHost)

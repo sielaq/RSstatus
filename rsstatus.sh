@@ -34,6 +34,14 @@ help() {
   echo "Just run $0"
 }
 
+useMongoSSL() {
+  mongo -h | grep -q ssl
+}
+
+checkSSL () {
+  echo | openssl s_client -connect $1:27017 >/dev/null 2>&1
+}
+
 shortHost() {
   sed 's/\..*:/:/g'
 }
@@ -121,14 +129,22 @@ main() {
     exit 1
   }
 
+  # Determine SSL or TLS or none
+  ENCRYPTION=""
+  checkSSL $FQDN && {
+    encType="tls"
+    useMongoSSL && encType="ssl"
+    ENCRYPTION="--host $(hostname -f) --authenticationDatabase admin --${encType} --${encType}AllowInvalidCertificates"
+  }
+
   # Determine if login is required (needed for nologin / or STARTUP state)
-  mongo --quiet admin $LOGIN <<< 'rs.conf()' >/dev/null 2>&1  || \
-  { mongo --quiet admin <<< 'rs.conf()' >/dev/null 2>&1 && LOGIN=""; }
+  mongo --quiet admin $LOGIN $ENCRYPTION <<< 'rs.conf()' >/dev/null 2>&1  || \
+  { mongo --quiet admin $ENCRYPTION <<< 'rs.conf()' >/dev/null 2>&1 && LOGIN=""; }
   [ $? -ne 0 ] && helpInstall && exit 1
 
-  CONF=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.conf().members.sort((a,b) => a._id - b._id ))')
-  STATUS=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(rs.status().members.sort((a,b) => a._id - b._id ))')
-  #VERSION=$(mongo --quiet admin $LOGIN <<< 'JSON.stringify(db.version())')
+  CONF=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< 'JSON.stringify(rs.conf().members.sort((a,b) => a._id - b._id ))')
+  STATUS=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< 'JSON.stringify(rs.status().members.sort((a,b) => a._id - b._id ))')
+  #VERSION=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< 'JSON.stringify(db.version())')
 
   _ID=$(getDataFromJSON _id "$CONF")
   _HOST=$(getDataFromJSON host "$CONF"| shortHost)

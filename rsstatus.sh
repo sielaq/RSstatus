@@ -4,13 +4,11 @@
 
 PORT=27017
 
-helpJSHON() {
+helpJSON() {
   exec 1>&2
   cat << HELP
-  jshon or jq is required
-    apt-get install jshon
-  or
-    apt-get install jq
+  One of jshon / jq / yq is required
+    apt-get install [ jshon | jq | yq ]
 HELP
 }
 
@@ -91,8 +89,9 @@ getDataFromJSON() {
     jqArgs="${jqArgs}.\"${element}\""
   done
 
-  [ $JSHON ] && jshon -Q -C -a ${jshonArgs} -u <<< "$last" && return
+  [ $YQ ] && yq .[]${jqArgs} -r <<< "$last" && return
   [ $JQ ] && jq .[]${jqArgs} -r <<< "$last" && return
+  [ $JSHON ] && jshon -Q -C -a ${jshonArgs} -u <<< "$last" && return
   return 1
 }
 
@@ -149,11 +148,12 @@ main() {
 
   [ $# -ne 0 ] && help && exit 1
 
-  which jshon >/dev/null 2>&1 && JSHON=true
+  which yq >/dev/null 2>&1 && YQ=true
   which jq >/dev/null 2>&1 && JQ=true
+  which jshon >/dev/null 2>&1 && JSHON=true
 
-  [ $JSHON ] || [ $JQ ] || {
-    helpJSHON
+  [ $JSHON ] || [ $JQ ] || [ $YQ ] || {
+    helpJSON
     exit 1
   }
 

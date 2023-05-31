@@ -7,7 +7,7 @@ PORT=27017
 helpJSON() {
   exec 1>&2
   cat << HELP
-  One of jshon / jq / yq is required
+  One of [ jshon | jq | yq ] is required
     apt-get install [ jshon | jq | yq ]
 HELP
 }
@@ -81,17 +81,16 @@ fixColors() {
 
 getDataFromJSON() {
   last=${!#}
-  except_last=${@:1:${#}-1}
+  exceptLast=${@:1:${#}-1}
 
-  for element in $except_last;
-  do
-    jshonArgs="${jshonArgs} -e ${element}"
-    jqArgs="${jqArgs}.\"${element}\""
+  jqArgs=".[]"
+  for element in $exceptLast; do
+    jqArgs="${jqArgs}${jqElement}${jqEscQuote}${element}${jqEscQuote}"
   done
 
-  [ $YQ ] && yq .[]${jqArgs} -r <<< "$last" && return
-  [ $JQ ] && jq .[]${jqArgs} -r <<< "$last" && return
-  [ $JSHON ] && jshon -Q -C -a ${jshonArgs} -u <<< "$last" && return
+  [ $DEBUG ] && echo -e "----\n"${jqBin} ${jqFlags} ${jqArgs} ${jqUnString} "<<<" "'${last}'" >> DEBUG
+
+  ${jqBin} ${jqFlags} ${jqArgs} ${jqUnString} <<< "${last}" && return
   return 1
 }
 
@@ -148,11 +147,27 @@ main() {
 
   [ $# -ne 0 ] && help && exit 1
 
-  which yq >/dev/null 2>&1 && YQ=true
-  which jq >/dev/null 2>&1 && JQ=true
-  which jshon >/dev/null 2>&1 && JSHON=true
+  ## Set up JSON parser with flags and special commands
 
-  [ $JSHON ] || [ $JQ ] || [ $YQ ] || {
+  # defaults for yq and jq
+  jqFlags=""
+  jqUnString="-r"
+  jqElement="."
+  jqEscQuote="\""
+
+  # Pick one of the supported JSON parser
+  jqBin=$(which yq 2>/dev/null) || { \
+    jqBin=$(which jq 2>/dev/null) || { \
+      jqBin=$(which jshon 2>/dev/null) && { \
+            jqFlags="-Q -C -a"
+            jqUnString="-u"
+            jqElement=" -e "
+            jqEscQuote=""
+      }
+    }
+  }
+
+  [ $jqBin ] || {
     helpJSON
     exit 1
   }

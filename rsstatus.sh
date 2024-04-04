@@ -39,7 +39,7 @@ GRN=$(echo -e "\033[32m")
 END=$(echo -e "\033[0m")
 
 supportColors() {
-  numberOfChars=$(echo -e "${GRN}X${END}\t0\nX\t0" | column -t -x | wc -c)
+  numberOfChars=$(echo -e "${GRN}X${END}\t0\nX\t0" | column -t | wc -c)
   [ $numberOfChars -eq 19 ] && return 0
   return 1
 }
@@ -130,7 +130,7 @@ separateColumns() {
 }
 
 adjustColumns() {
-  column -t -x
+  column -t
 }
 
 purifyJSON() {
@@ -264,7 +264,7 @@ main() {
                 <(echo "$_OPTIME") \
   )
 
-  ARRAY=$(echo -e "${HEAD}\n${ARRAY}" | adjustColumns | separateColumns )
+  ARRAY=$(echo -e "${HEAD}\n${ARRAY}" | adjustColumns | separateColumns)
   lenLongestLine=$(echo "$ARRAY" | fixColors | wc -L)
 
   topLine $lenLongestLine

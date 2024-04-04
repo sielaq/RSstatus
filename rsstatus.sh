@@ -50,7 +50,7 @@ colorize() {
 }
 
 useMongoSSL() {
-  mongo -h | grep -q ssl
+  $MONGO -h | grep -q ssl
 }
 
 checkSSL () {
@@ -172,6 +172,10 @@ main() {
     exit 1
   }
 
+  MONGO=$(which mongo 2>/dev/null) || { \
+    MONGO=$(which mongosh 2>/dev/null)
+  }
+
   HOST_LONG=$(hostname -f)
   HOST=$(echo $HOST_LONG | sed 's/\..*//g')
 
@@ -184,17 +188,17 @@ main() {
   }
 
   # Determine if login is required (needed for nologin / or STARTUP state)
-  mongo --port $PORT --quiet admin $LOGIN $ENCRYPTION <<< 'rs.conf()' >/dev/null 2>&1  || \
-  { mongo --port $PORT --quiet admin $ENCRYPTION <<< 'rs.conf()' >/dev/null 2>&1 && LOGIN=""; }
+  $MONGO --port $PORT --quiet admin $LOGIN $ENCRYPTION <<< 'rs.conf()' >/dev/null 2>&1  || \
+  { $MONGO --port $PORT --quiet admin $ENCRYPTION <<< 'rs.conf()' >/dev/null 2>&1 && LOGIN=""; }
   [ $? -ne 0 ] && helpInstall && exit 1
 
-  VERSION=$(mongo --quiet admin $LOGIN $ENCRYPTION <<< 'JSON.stringify(db.version())')
+  VERSION=$($MONGO --quiet admin $LOGIN $ENCRYPTION <<< 'JSON.stringify(db.version())')
   [[ "${VERSION#\"}" =~ ^2\. ]] && esc="'"
   [[ "${VERSION#\"}" =~ ^3\.0 ]] && esc="'"
 
   sorted="${esc}(a,b) => a._id - b._id${esc}"
-  CONF=$(mongo --port $PORT --quiet admin $LOGIN $ENCRYPTION <<< "JSON.stringify(rs.conf().members.sort($sorted))")
-  STATUS=$(mongo --port $PORT --quiet admin $LOGIN $ENCRYPTION <<< "JSON.stringify(rs.status().members.sort($sorted))")
+  CONF=$($MONGO --port $PORT --quiet admin $LOGIN $ENCRYPTION <<< "JSON.stringify(rs.conf().members.sort($sorted))")
+  STATUS=$($MONGO --port $PORT --quiet admin $LOGIN $ENCRYPTION <<< "JSON.stringify(rs.status().members.sort($sorted))")
 
   DATE=$(date '+%Y-%m-%d')
   purifyJSON CONF
@@ -214,6 +218,10 @@ main() {
   _HIDDEN=$(getDataFromJSON hidden "$CONF"| fixHidden)
 
   case "$STATUS" in
+    # 6.0
+    *optime\"*t*low*high*)
+      _OPTIME=$(getDataFromJSON optime ts '$timestamp' "$STATUS" | timeToHex)
+      ;;
     # 3.4 / 3.6
     *optime\"*ts*timestamp*)
       _OPTIME_T=$(getDataFromJSON optime ts '$timestamp' t "$STATUS" | timeToHex)
@@ -236,9 +244,9 @@ main() {
       ;;
   esac
 
-  _OPTIME=$(paste -d':' <(echo "$_OPTIME_T") \
-                        <(echo "$_OPTIME_I") \
-  )
+  _OPTIME=${_OPTIME:-$(paste -d':' <(echo "$_OPTIME_T") \
+                                   <(echo "$_OPTIME_I") \
+  )}
 
   _STATE=$(getDataFromJSON stateStr "$STATUS"| sanitizeLine | colorize PRIMARY)
   _UP=$(getDataFromJSON health "$STATUS")

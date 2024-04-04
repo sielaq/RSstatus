@@ -40,6 +40,12 @@ create `readolny` user in mogodb with `clusterMonitor` role:
 
 ```
 
+if `mongosh` is used,  
+keep in mind to disable `prompt` in `/.mongoshrc.js`:
+```
+prompt=function(){return "";}
+```
+
 ### Run
 
 ```

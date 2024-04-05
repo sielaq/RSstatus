@@ -94,35 +94,12 @@ getDataFromJSON() {
   return 1
 }
 
-topLine() {
-  printf -- "+-"
-  for i in $(seq 1 $1); do
-     printf -- "-"
-  done
-  printf -- "-+"
-  echo
-}
-
-fixLine() {
-  while read data; do
-    printf "| "
-    printf "$data"
-    maxLine=$(echo "$data" | fixColors | wc -L)
-    countMissing=$(( $1 - $maxLine ))
-    for i in $(seq 1 $countMissing); do
-      printf " "
-    done
-    printf " |"
-    echo
-  done
+printLine() {
+  printf -- "+-"$(seq -s"-" $1 | sed 's/[0-9]//g')"--+"
 }
 
 sanitizeLine() {
   sed 's/ /_/g'
-}
-
-bottomLine() {
-  topLine "$1"
 }
 
 separateColumns() {
@@ -138,6 +115,25 @@ purifyJSON() {
   export $1="$(echo "$dirtyJSON" | grep -v ^$DATE)"
   local _warnings=$(echo "$dirtyJSON" | grep ^$DATE)
   [ -n "$_warnings" ] && WARNINGS="${WARNINGS}${_warnings}"$'\n'
+}
+
+lenLine() {
+  echo "$1" | fixColors | wc -L
+}
+
+border() {
+  lenLongestLine=$(lenLine "$1")
+  dashedLine=$(printLine $lenLongestLine)
+
+  echo "$dashedLine"
+  echo "$1" | while read line; do
+    maxLine=$(lenLine "$line")
+    countMissing=$(( $lenLongestLine - $maxLine + 1))
+    missingSpaces=$(seq -s " " $countMissing|sed 's/[0-9]//g')
+    printf "| ${line}${missingSpaces} |"
+    echo
+  done
+  echo "$dashedLine"
 }
 
 main() {
@@ -265,11 +261,7 @@ main() {
   )
 
   ARRAY=$(echo -e "${HEAD}\n${ARRAY}" | adjustColumns | separateColumns)
-  lenLongestLine=$(echo "$ARRAY" | fixColors | wc -L)
-
-  topLine $lenLongestLine
-  echo "$ARRAY" | fixLine $lenLongestLine
-  bottomLine $lenLongestLine
+  border "$ARRAY"
 
 }
 main $@

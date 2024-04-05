@@ -112,7 +112,7 @@ adjustColumns() {
 
 purifyJSON() {
   eval dirtyJSON=$(echo \$"$1")
-  export $1="$(echo "$dirtyJSON" | grep -v ^$DATE)"
+  export $1="$(echo "$dirtyJSON" | grep -v ^$DATE| sed 's/.*> //g')"
   local _warnings=$(echo "$dirtyJSON" | grep ^$DATE)
   [ -n "$_warnings" ] && WARNINGS="${WARNINGS}${_warnings}"$'\n'
 }

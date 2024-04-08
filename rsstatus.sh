@@ -95,7 +95,11 @@ getDataFromJSON() {
 }
 
 printLine() {
-  printf -- "+-"$(seq -s"-" $1 | sed 's/[0-9]//g')"--+"
+  # fast printing for longer line
+  #printf -- "+-$(seq -s"-" $1 | sed 's/[0-9]//g')--+"
+
+  # fast printing for shorter line
+  printf -- "+-$(eval "for i in {1..$1}; do printf -- '-';done")-+"
 }
 
 sanitizeLine() {
